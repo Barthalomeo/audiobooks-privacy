@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InVoice — Delete your account</title>
+<style>
+  :root {
+    --bg: #FAFBFB; --fg: #15211F; --muted: #6B7976; --rule: #DDE4E2;
+    --brand: #0F5E52; --danger: #B3261E; --ok: #1B7A3E; --warn-bg: #FDF0D5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121816; --fg: #E8EDEB; --muted: #9AA8A4; --rule: #2A3431;
+      --brand: #1A8F7A; --warn-bg: #2A2416;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto; max-width: 560px; padding: 32px 16px 64px;
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  h1 { font-size: 1.6rem; margin: 0 0 6px; }
+  h2 { font-size: 1.05rem; margin: 28px 0 8px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  ul { padding-left: 20px; }
+  li { margin: 5px 0; }
+  .box {
+    border: 1px solid var(--rule); border-left: 3px solid var(--brand);
+    border-radius: 8px; padding: 14px 16px; margin: 20px 0;
+  }
+  .warn { background: var(--warn-bg); border-left-color: var(--danger); }
+  .card {
+    border: 1px solid var(--rule); border-radius: 14px;
+    padding: 22px 20px; margin-top: 28px;
+  }
+  label { display: block; font-size: .85rem; color: var(--muted); margin: 14px 0 6px; }
+  input {
+    width: 100%; padding: 12px 14px; font-size: 1rem;
+    border: 1px solid var(--rule); border-radius: 10px;
+    background: transparent; color: var(--fg);
+  }
+  input:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+  button {
+    width: 100%; margin-top: 20px; padding: 14px; font-size: 1rem;
+    font-weight: 600; color: #fff; background: var(--brand);
+    border: 0; border-radius: 12px; cursor: pointer;
+  }
+  button.danger { background: var(--danger); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .msg { margin-top: 14px; font-size: .9rem; }
+  .err { color: var(--danger); }
+  .ok  { color: var(--ok); }
+  .hint { font-size: .85rem; color: var(--muted); margin-top: 8px; }
+  a { color: var(--brand); }
+</style>
+</head>
+<body>
+
+<h1>Delete your InVoice account</h1>
+<p class="sub">Developer: Hamza Saeed · App: InVoice</p>
+
+<p>You can delete your InVoice account and its data from this page, without
+installing the app. You can also do it inside the app under
+<strong>More → Delete account</strong>.</p>
+
+<h2>What gets deleted</h2>
+<ul>
+  <li>Your account and sign-in details</li>
+  <li>Your membership of any business, and your access to it</li>
+  <li>Your business, its invoices, line items, templates and history — <em>if you
+      are the last active member</em></li>
+</ul>
+
+<h2>What is kept, and why</h2>
+<p>If other people are still active members of your business, that business and
+its invoices remain, because they belong to the business rather than to you
+personally — deleting your account must not destroy your colleagues' records.
+Ownership passes to another active member, and invoices you created stay with
+the business under their name.</p>
+
+<div class="box warn">
+  <strong>This cannot be undone.</strong> Once deleted, the account cannot be
+  recovered and you will not be able to sign in again.
+</div>
+
+<div class="card" id="card">
+  <h2 style="margin-top:0">Delete it now</h2>
+  <p class="hint">Sign in to confirm it is your account. Your details are sent
+  directly to our authentication provider over an encrypted connection.</p>
+
+  <div id="step1">
+    <label for="email">Email</label>
+    <input id="email" type="email" autocomplete="username">
+
+    <label for="pw">Password</label>
+    <input id="pw" type="password" autocomplete="current-password">
+
+    <button id="signin">Continue</button>
+  </div>
+
+  <div id="step2" style="display:none">
+    <p id="who" class="hint"></p>
+    <label for="typed">Type DELETE to confirm</label>
+    <input id="typed" type="text" autocomplete="off">
+    <button id="del" class="danger" disabled>Delete my account for good</button>
+  </div>
+
+  <div id="msg" class="msg"></div>
+</div>
+
+<h2>Prefer not to use this page?</h2>
+<p>Email <a href="mailto:hamzasaeedkw@gmail.com">hamzasaeedkw@gmail.com</a> from
+the address on the account and we will delete it for you. We aim to respond
+within 30 days.</p>
+
+<p class="hint">See also our
+<a href="privacy-policy.html">privacy policy</a>.</p>
+
+<script>
+(function () {
+  // Safe in a public page: this is the publishable anon key, and Row Level
+  // Security is what protects the data.
+  var SUPABASE_URL = "https://bethdwaaeutzajiiuqtg.supabase.co";
+  var ANON_KEY = "sb_publishable_-td-RPuqUIH1HBKFtxqj-A_dYsE6_Pl";
+
+  var step1 = document.getElementById("step1");
+  var step2 = document.getElementById("step2");
+  var msg = document.getElementById("msg");
+  var who = document.getElementById("who");
+  var typed = document.getElementById("typed");
+  var del = document.getElementById("del");
+  var signin = document.getElementById("signin");
+  var token = null;
+
+  function say(t, cls) { msg.textContent = t; msg.className = "msg " + (cls || ""); }
+
+  signin.addEventListener("click", function () {
+    var email = document.getElementById("email").value.trim();
+    var pw = document.getElementById("pw").value;
+    if (!email || !pw) { say("Enter your email and password.", "err"); return; }
+
+    signin.disabled = true;
+    say("Checking...");
+
+    fetch(SUPABASE_URL + "/auth/v1/token?grant_type=password", {
+      method: "POST",
+      headers: { "apikey": ANON_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, password: pw })
+    }).then(function (r) {
+      return r.json().then(function (b) { return { ok: r.ok, body: b }; });
+    }).then(function (res) {
+      if (res.ok && res.body.access_token) {
+        token = res.body.access_token;
+        who.textContent = "Signed in as " + email + ".";
+        step1.style.display = "none";
+        step2.style.display = "block";
+        say("");
+      } else {
+        say((res.body && (res.body.error_description || res.body.msg)) ||
+            "Could not sign in. Check your email and password.", "err");
+        signin.disabled = false;
+      }
+    }).catch(function () {
+      say("Network problem. Check your connection and try again.", "err");
+      signin.disabled = false;
+    });
+  });
+
+  typed.addEventListener("input", function () {
+    del.disabled = typed.value.trim() !== "DELETE";
+  });
+
+  del.addEventListener("click", function () {
+    del.disabled = true;
+    say("Deleting...");
+
+    fetch(SUPABASE_URL + "/rest/v1/rpc/delete_my_account", {
+      method: "POST",
+      headers: {
+        "apikey": ANON_KEY,
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json"
+      },
+      body: "{}"
+    }).then(function (r) {
+      if (r.status === 204 || r.ok) {
+        document.getElementById("card").innerHTML =
+          '<p class="ok"><strong>Your account has been deleted.</strong></p>' +
+          '<p class="hint">You can close this page. If the app is still ' +
+          'installed on a phone, sign out or uninstall it to clear the copy ' +
+          'held on that device.</p>';
+      } else {
+        return r.json().then(function (b) {
+          say((b && (b.message || b.msg)) || "Could not delete the account. Try again.", "err");
+          del.disabled = false;
+        });
+      }
+    }).catch(function () {
+      say("Network problem. Check your connection and try again.", "err");
+      del.disabled = false;
+    });
+  });
+})();
+</script>
+</body>
+</html>
