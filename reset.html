@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InVoice — Reset your password</title>
+<style>
+  :root {
+    --bg: #FAFBFB; --fg: #15211F; --muted: #6B7976; --rule: #DDE4E2;
+    --brand: #0F5E52; --danger: #B3261E; --ok: #1B7A3E;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121816; --fg: #E8EDEB; --muted: #9AA8A4; --rule: #2A3431;
+      --brand: #1A8F7A;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center;
+    justify-content: center; padding: 24px 16px;
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .card {
+    width: 100%; max-width: 420px;
+    border: 1px solid var(--rule); border-radius: 16px; padding: 28px 24px;
+  }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 22px; font-size: .95rem; }
+  label { display: block; font-size: .85rem; color: var(--muted); margin: 14px 0 6px; }
+  input[type=password] {
+    width: 100%; padding: 12px 14px; font-size: 1rem;
+    border: 1px solid var(--rule); border-radius: 10px;
+    background: transparent; color: var(--fg);
+  }
+  input:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+  button {
+    width: 100%; margin-top: 22px; padding: 14px; font-size: 1rem;
+    font-weight: 600; color: #fff; background: var(--brand);
+    border: 0; border-radius: 12px; cursor: pointer;
+  }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .msg { margin-top: 16px; font-size: .9rem; }
+  .err { color: var(--danger); }
+  .ok  { color: var(--ok); }
+  .hint { font-size: .85rem; color: var(--muted); margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Reset your password</h1>
+  <p class="sub">Choose a new password for your InVoice account.</p>
+
+  <div id="form-area">
+    <label for="p1">New password</label>
+    <input id="p1" type="password" autocomplete="new-password" placeholder="At least 6 characters">
+
+    <label for="p2">Confirm new password</label>
+    <input id="p2" type="password" autocomplete="new-password">
+
+    <button id="go" disabled>Set new password</button>
+    <div id="msg" class="msg"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // Both are safe in a public page: the URL is public and this is the
+  // publishable anon key. Row Level Security protects the data, not the key.
+  var SUPABASE_URL = "https://bethdwaaeutzajiiuqtg.supabase.co";
+  var ANON_KEY = "sb_publishable_-td-RPuqUIH1HBKFtxqj-A_dYsE6_Pl";
+
+  var p1 = document.getElementById("p1");
+  var p2 = document.getElementById("p2");
+  var go = document.getElementById("go");
+  var msg = document.getElementById("msg");
+  var formArea = document.getElementById("form-area");
+
+  function say(text, cls) {
+    msg.textContent = text;
+    msg.className = "msg " + (cls || "");
+  }
+
+  // Supabase sends the recovery link to /auth/v1/verify, which redirects here
+  // with the session in the URL fragment. A fragment is never sent to a server,
+  // which is why the token arrives this way rather than as a query parameter.
+  function readToken() {
+    var h = (window.location.hash || "").replace(/^#/, "");
+    var q = new URLSearchParams(h);
+    if (q.get("access_token")) return { token: q.get("access_token") };
+    var err = q.get("error_description") || q.get("error");
+    if (err) return { error: err.replace(/\+/g, " ") };
+    var sq = new URLSearchParams(window.location.search);
+    var serr = sq.get("error_description") || sq.get("error");
+    if (serr) return { error: serr.replace(/\+/g, " ") };
+    return {};
+  }
+
+  var found = readToken();
+
+  if (found.error) {
+    formArea.innerHTML = '<p class="err">' + found.error + '</p>' +
+      '<p class="hint">Reset links expire after a short time. Open the app and ' +
+      'ask for a new one.</p>';
+    return;
+  }
+
+  if (!found.token) {
+    formArea.innerHTML = '<p class="err">This page needs a reset link to work.</p>' +
+      '<p class="hint">Open the link from your reset email. If you typed this ' +
+      'address in by hand, go back to the app and choose "Forgot password?" ' +
+      'to get a fresh email.</p>';
+    return;
+  }
+
+  // Take the token out of the address bar so it is not left sitting in history
+  // or read over a shoulder. It is already held in a variable.
+  try { history.replaceState(null, "", window.location.pathname); } catch (e) {}
+
+  function validate() {
+    var a = p1.value, b = p2.value;
+    go.disabled = !(a.length >= 6 && a === b);
+    if (a && a.length < 6) say("At least 6 characters", "err");
+    else if (b && a !== b) say("These do not match", "err");
+    else say("");
+  }
+
+  p1.addEventListener("input", validate);
+  p2.addEventListener("input", validate);
+
+  go.addEventListener("click", function () {
+    go.disabled = true;
+    say("Saving...");
+
+    fetch(SUPABASE_URL + "/auth/v1/user", {
+      method: "PUT",
+      headers: {
+        "apikey": ANON_KEY,
+        "Authorization": "Bearer " + found.token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ password: p1.value })
+    }).then(function (r) {
+      return r.json().then(function (body) { return { ok: r.ok, body: body }; });
+    }).then(function (res) {
+      if (res.ok) {
+        formArea.innerHTML =
+          '<p class="ok"><strong>Password changed.</strong></p>' +
+          '<p class="hint">Go back to the InVoice app and sign in with your ' +
+          'new password. You can close this page.</p>';
+      } else {
+        var m = (res.body && (res.body.msg || res.body.message || res.body.error_description)) ||
+                "Could not change the password.";
+        say(m, "err");
+        go.disabled = false;
+      }
+    }).catch(function () {
+      say("Network problem. Check your connection and try again.", "err");
+      go.disabled = false;
+    });
+  });
+})();
+</script>
+</body>
+</html>
