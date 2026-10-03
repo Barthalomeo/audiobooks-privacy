@@ -52,7 +52,7 @@
 
 <h1>Privacy Policy</h1>
 <p class="sub"><strong>InVoice</strong> — invoicing for small businesses</p>
-<p class="sub">Last updated: 29 September 2026</p>
+<p class="sub">Last updated: 3 October 2026</p>
 
 <p>This policy explains what InVoice collects, why, and who else sees it. It
 covers the Android app and the services it talks to.</p>
@@ -76,11 +76,20 @@ covers the Android app and the services it talks to.</p>
   <li>Invoice template settings, including any <strong>logo image</strong> and <strong>signature image</strong> you upload</li>
 </ul>
 
-<h3>Voice recordings</h3>
+<h3>Voice recordings and voice commands</h3>
 <p>When you use dictation or the voice assistant, the app records a short audio
-clip and sends it for processing so your words can be turned into an invoice or
-a command. Audio is processed to produce that result and is not stored by us
-after the request completes.</p>
+clip and sends it for processing, so your words can be turned into an invoice or
+a command. With a voice command the app also sends what the assistant needs to
+carry it out: the screen you are on and any invoice open on it; your recent
+invoices' numbers, client names, dates, totals, status and amounts still owed;
+a list of your client names; your invoice template names; your business name,
+address, phone and email; this phone's next invoice number; your last few voice
+exchanges; and, if you manage the business, the email addresses of people asking
+to join it.</p>
+<p>We don't keep the audio once the request is done. Our servers log only
+technical details of each request (its time, your account ID, the outcome and
+how long it took), never the audio or what was said. Spoken replies are made by
+your phone's own text-to-speech.</p>
 
 <div class="box">
   <strong>What we do not collect.</strong> InVoice contains no advertising,
@@ -96,11 +105,15 @@ on our behalf:</p>
 <ul>
   <li><strong>Supabase</strong> — hosts the database and handles sign-in. Your
       account and invoice data are stored there.</li>
-  <li><strong>Cloudflare</strong> — the voice features route through Cloudflare
-      Workers, which pass your audio to the speech provider.</li>
-  <li><strong>Google (Gemini API)</strong> — transcribes your speech and
-      interprets voice commands. Audio you record is sent to Google for this
-      purpose.</li>
+<li><strong>Cloudflare</strong> — the voice features run through Cloudflare
+    Workers, which check that you're signed in and pass your request to Google.
+    Cloudflare keeps short-lived technical logs of each request, not its content.</li>
+<li><strong>Google (Gemini API)</strong> — transcribes your speech and carries out
+    voice commands. The audio and the details listed under "Voice recordings and
+    voice commands" are sent to Google for this. We use Google's free Gemini API
+    tier, under which Google may use what it receives to improve its products, and
+    human reviewers may read it. If you'd rather not share this, use the app
+    without voice: everything else works the same.</li>
 </ul>
 <p>Your data may be stored or processed on servers outside your country,
 including in the United States and the European Union.</p>
@@ -148,7 +161,7 @@ page and, where the change is significant, notify you in the app.</p>
 <strong><a href="mailto:hamzasaeedkw@gmail.com">hamzasaeedkw@gmail.com</a></strong></p>
 
 <footer>
-InVoice · Privacy Policy · Last updated 29 September 2026
+InVoice · Privacy Policy · Last updated 3 October 2026
 </footer>
 
 </body>
